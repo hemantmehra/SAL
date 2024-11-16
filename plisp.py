@@ -40,22 +40,36 @@ def tokenize(code: str) -> list:
     while i < n:
         if code[i] == '(':
             tokens.append(token_open())
+            i+=1
         elif code[i] == ')':
             if word:
                 tokens.append(token_parse(word))
                 word = ''
                 in_word_flag = False
             tokens.append(token_close())
+            i+=1
+        elif code[i] == "'":
+            if code[i+2] == "'":
+                tokens.append(token_literal(code[i+1]))
+            elif code[i+3] == "'":
+                if code[i+2] == '\\' and code[i+3] == 'n':
+                    tokens.append(token_literal('\n'))
+                else:
+                    assert False, f"invalid character. {code[i:i+3]}"
+            else:
+                assert False, f"invalid character. {code[i:i+3]}"
+            i += 3
         elif code[i].isspace() and in_word_flag:
             tokens.append(token_parse(word))
             in_word_flag = False
             word = ''
+            i+=1
         elif code[i].isspace() and not in_word_flag:
-            ...
+            i+=1
         elif code[i] != '(' and code[i] != ')':
             in_word_flag = True
             word += code[i]
-        i+=1
+            i+=1
     return tokens
 
 def parse_statements(tokens: list) -> list:
@@ -119,6 +133,9 @@ def parse_ast(statements):
 def apply(f, args):
     if f[0] == Token_Ident:
         if f[1] == 'print':
+            print(args[0][1], end='')
+            return 0
+        elif f[1] == 'println':
             print(args[0][1])
             return 0
         elif f[1] == '+':
