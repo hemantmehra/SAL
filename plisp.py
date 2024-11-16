@@ -122,18 +122,41 @@ def apply(f, args):
             print(args[0][1])
             return 0
         elif f[1] == '+':
-            print(args[0][1], args[1][1])
             return (Token_Literal, args[0][1] + args[1][1])
         elif f[1] == '*':
             return (Token_Literal, args[0][1] * args[1][1])
+        elif f[1] == '<<':
+            return (Token_Literal, args[0][1] << args[1][1])
+        elif f[1] == '>>':
+            return (Token_Literal, args[0][1] >> args[1][1])
+        elif f[1] == '&':
+            return (Token_Literal, args[0][1] & args[1][1])
+        elif f[1] == '|':
+            return (Token_Literal, args[0][1] | args[1][1])
+        else:
+            assert False, f"Assert not reached, unknown func: {f}"
     else:
         assert False, "Assert not reached!\n"
 
 def eval(l, env):
     if type(l) == list:
         if l[0][0] == Token_Ident and l[0][1] == 'set':
-            env[l[1][1]] = eval(l[2], env)
-            print(env)
+            k = l[1][1]
+            if k in env and type(env[k]) == list:
+                index = l[2][1]
+                val = l[3]
+                env[k][index] = eval(val, env)
+                return
+            env[k] = eval(l[2], env)
+            return
+        elif l[0][0] == Token_Ident and l[0][1] == 'array':
+            env[l[1][1]] = [None] * eval(l[2], env)[1]
+            return
+        elif l[0][0] == Token_Ident and l[0][1] == 'get':
+            index = l[2][1]
+            key = l[1][1]
+            return env[key][index]
+
         return apply(eval(l[0], env), [eval(i, env) for i in l[1:]])
 
     elif type(l) == tuple:
@@ -162,11 +185,12 @@ source_code = ''
 with open('test.lsp') as fin:
     source_code = fin.read()
 
+print(source_code)
 tokens = tokenize(source_code)
 statements = parse_statements(tokens)
-print(statements)
+# print(statements)
 
 ast = parse_ast(statements)
-print(ast)
+# print(ast)
 
 run_function(ast, 'main')
