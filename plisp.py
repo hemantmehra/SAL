@@ -149,6 +149,10 @@ def eval(l, env):
                 return
             env[k] = eval(l[2], env)
             return
+        elif l[0][0] == Token_Ident and l[0][1] == 'dec':
+            k = l[1][1]
+            env[k] = (env[k][0], env[k][1]-1)
+            return
         elif l[0][0] == Token_Ident and l[0][1] == 'array':
             env[l[1][1]] = [None] * eval(l[2], env)[1]
             return
@@ -176,8 +180,28 @@ def run_function(ast, func_name):
     for func in ast:
         print(func['name'])
         if func['name'] == func_name:
-            for statement in func['block']:
-                eval(statement, env)
+            i = 0
+            label_map = {}
+            block = func['block']
+            n = len(block)
+
+            while i < n:
+                statement = block[i]
+                if statement[0][0] == Token_Ident and statement[0][1] == 'label':
+                    key = statement[1][1]
+                    label_map[key] = i
+                    i += 1
+                elif statement[0][0] == Token_Ident and statement[0][1] == 'jmp_g':
+                    key = statement[1][1]
+                    a = eval(statement[2], env)
+                    b = eval(statement[3], env)
+                    if a > b:
+                        i = label_map[key]
+                    else:
+                        i += 1
+                else:
+                    eval(statement, env)
+                    i+=1
             return
     assert False, f'Assert not reached. Function {func_name} not found.'
 
