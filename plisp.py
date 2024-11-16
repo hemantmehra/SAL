@@ -25,6 +25,12 @@ def token_ident(x):
 def token_literal(x):
     return (Token_Literal, x)
 
+def token_parse(x):
+    try:
+        return token_literal(int(x))
+    except:
+        return token_ident(x)
+
 def tokenize(code: str) -> list:
     i = 0
     n = len(code)
@@ -36,17 +42,17 @@ def tokenize(code: str) -> list:
             tokens.append(token_open())
         elif code[i] == ')':
             if word:
-                tokens.append(token_literal(word))
+                tokens.append(token_parse(word))
                 word = ''
                 in_word_flag = False
             tokens.append(token_close())
         elif code[i].isspace() and in_word_flag:
-            tokens.append(token_literal(word))
+            tokens.append(token_parse(word))
             in_word_flag = False
             word = ''
         elif code[i].isspace() and not in_word_flag:
             ...
-        elif code[i].isalnum():
+        elif code[i] != '(' and code[i] != ')':
             in_word_flag = True
             word += code[i]
         i+=1
@@ -106,54 +112,57 @@ def parse_ast(statements):
         elif in_func_flag:
             func_block.append(statements[i])
         else:
-            assert False, "Assert not reached"
+            assert False, f"Assert not reached: {statements[i]}"
         i += 1
     return ast
 
 def apply(f, args):
-    if f[0] == Token_Ident and f[1] == 'print':
-        print(args[0][1])
+    if f[0] == Token_Ident:
+        if f[1] == 'print':
+            print(args[0][1])
+            return 0
+        elif f[1] == '+':
+            print(args[0][1], args[1][1])
+            return (Token_Literal, args[0][1] + args[1][1])
+        elif f[1] == '*':
+            return (Token_Literal, args[0][1] * args[1][1])
     else:
         assert False, "Assert not reached!\n"
 
-def eval(l):
+def eval(l, env):
     if type(l) == list:
-        return apply(eval(l[0]), [eval(i) for i in l[1:]])
-    
+        if l[0][0] == Token_Ident and l[0][1] == 'set':
+            env[l[1][1]] = eval(l[2], env)
+            print(env)
+        return apply(eval(l[0], env), [eval(i, env) for i in l[1:]])
+
     elif type(l) == tuple:
         if l[0] == Token_Literal:
             return l
         elif l[0] == Token_Ident:
+            if l[1] in env:
+                return env[l[1]]
             return l
         else:
-            assert False, "Assert not reached!\n"
+            assert False, f"Assert not reached!, {l}\n"
     else:
-            assert False, "Assert not reached!\n"
+            assert False, f"Assert not reached!, {l}\n"
 
 def run_function(ast, func_name):
+    env = {}
     for func in ast:
         print(func['name'])
         if func['name'] == func_name:
-            for block in func['block']:
-                eval(block)
+            for statement in func['block']:
+                eval(statement, env)
             return
     assert False, f'Assert not reached. Function {func_name} not found.'
 
+source_code = ''
+with open('test.lsp') as fin:
+    source_code = fin.read()
 
-tokens = [
-    token_open(),
-    token_ident('def'),
-    token_ident('main'),
-    token_close(),
-    token_open(),
-    token_ident('print'),
-    token_literal(1),
-    token_close(),
-    token_open(),
-    token_ident('end'),
-    token_ident('main'),
-    token_close()
-]
+tokens = tokenize(source_code)
 statements = parse_statements(tokens)
 print(statements)
 
