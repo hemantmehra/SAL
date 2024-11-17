@@ -5,4 +5,5 @@
         (dec a)
     (jmp_g loop a  0)
     (println 'a')
+    (return 42)
 (end main)

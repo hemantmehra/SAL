@@ -153,7 +153,7 @@ def apply(f, args):
         else:
             assert False, f"Assert not reached, unknown func: {f}"
     else:
-        assert False, "Assert not reached!\n"
+        assert False, f"Assert not reached, unknown func: {f}"
 
 def eval(l, env):
     if type(l) == list:
@@ -192,35 +192,41 @@ def eval(l, env):
     else:
             assert False, f"Assert not reached!, {l}\n"
 
-def run_function(ast, func_name):
-    env = {}
+def find_function(ast, func_name):
     for func in ast:
         print(func['name'])
         if func['name'] == func_name:
-            i = 0
-            label_map = {}
-            block = func['block']
-            n = len(block)
+            return func
+    assert False, f'Assert not reached. Function {func_name} was not found.'
 
-            while i < n:
-                statement = block[i]
-                if statement[0][0] == Token_Ident and statement[0][1] == 'label':
-                    key = statement[1][1]
-                    label_map[key] = i
-                    i += 1
-                elif statement[0][0] == Token_Ident and statement[0][1] == 'jmp_g':
-                    key = statement[1][1]
-                    a = eval(statement[2], env)
-                    b = eval(statement[3], env)
-                    if a > b:
-                        i = label_map[key]
-                    else:
-                        i += 1
-                else:
-                    eval(statement, env)
-                    i+=1
-            return
-    assert False, f'Assert not reached. Function {func_name} not found.'
+def run_function(func):
+    env = {}
+
+    i = 0
+    label_map = {}
+    block = func['block']
+    n = len(block)
+
+    while i < n:
+        statement = block[i]
+        if statement[0][0] == Token_Ident and statement[0][1] == 'label':
+            key = statement[1][1]
+            label_map[key] = i
+            i += 1
+        elif statement[0][0] == Token_Ident and statement[0][1] == 'jmp_g':
+            key = statement[1][1]
+            a = eval(statement[2], env)
+            b = eval(statement[3], env)
+            if a > b:
+                i = label_map[key]
+            else:
+                i += 1
+        elif statement[0][0] == Token_Ident and statement[0][1] == 'return':
+            ret = eval(statement[1], env)
+            return ret
+        else:
+            eval(statement, env)
+            i+=1
 
 source_code = ''
 with open('test.lsp') as fin:
@@ -234,4 +240,6 @@ statements = parse_statements(tokens)
 ast = parse_ast(statements)
 # print(ast)
 
-run_function(ast, 'main')
+main_func = find_function(ast, 'main')
+ret_val = run_function(main_func)
+print(ret_val)
