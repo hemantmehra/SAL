@@ -130,8 +130,10 @@ def parse_ast(statements):
         i += 1
     return ast
 
-def apply(f, args):
-    if f[0] == Token_Ident:
+def apply(f, args, global_env):
+    if type(f) == dict:
+        return run_function(f, global_env)
+    elif f[0] == Token_Ident:
         if f[1] == 'print':
             print(args[0][1], end='')
             return 0
@@ -155,16 +157,16 @@ def apply(f, args):
     else:
         assert False, f"Assert not reached, unknown func: {f}"
 
-def eval(l, env):
+def eval(l, env, global_env):
     if type(l) == list:
         if l[0][0] == Token_Ident and l[0][1] == 'set':
             k = l[1][1]
             if k in env and type(env[k]) == list:
                 index = l[2][1]
                 val = l[3]
-                env[k][index] = eval(val, env)
+                env[k][index] = eval(val, env, global_env)
                 return
-            env[k] = eval(l[2], env)
+            env[k] = eval(l[2], env, global_env)
             return
         elif l[0][0] == Token_Ident and l[0][1] == 'dec':
             k = l[1][1]
@@ -177,8 +179,13 @@ def eval(l, env):
             index = l[2][1]
             key = l[1][1]
             return env[key][index]
+        elif l[0][0] == Token_Ident:
+            func_name = l[0][1]
+            if func_name in global_env:
+                func = global_env[func_name]
+                return apply(func, [eval(i, env, global_env) for i in l[1:]], global_env)
 
-        return apply(eval(l[0], env), [eval(i, env) for i in l[1:]])
+        return apply(eval(l[0], env, global_env), [eval(i, env, global_env) for i in l[1:]], global_env)
 
     elif type(l) == tuple:
         if l[0] == Token_Literal:
@@ -192,14 +199,18 @@ def eval(l, env):
     else:
             assert False, f"Assert not reached!, {l}\n"
 
-def find_function(ast, func_name):
+def make_global_env(ast):
+    global_env = {}
     for func in ast:
-        print(func['name'])
-        if func['name'] == func_name:
-            return func
+        global_env[func['name']] = func
+    return global_env
+
+def find_function(global_env, func_name):
+    if func_name in global_env:
+        return global_env[func_name]
     assert False, f'Assert not reached. Function {func_name} was not found.'
 
-def run_function(func):
+def run_function(func, global_env):
     env = {}
 
     i = 0
@@ -215,17 +226,17 @@ def run_function(func):
             i += 1
         elif statement[0][0] == Token_Ident and statement[0][1] == 'jmp_g':
             key = statement[1][1]
-            a = eval(statement[2], env)
-            b = eval(statement[3], env)
+            a = eval(statement[2], env, global_env)
+            b = eval(statement[3], env, global_env)
             if a > b:
                 i = label_map[key]
             else:
                 i += 1
         elif statement[0][0] == Token_Ident and statement[0][1] == 'return':
-            ret = eval(statement[1], env)
+            ret = eval(statement[1], env, global_env)
             return ret
         else:
-            eval(statement, env)
+            eval(statement, env, global_env)
             i+=1
 
 source_code = ''
@@ -240,6 +251,7 @@ statements = parse_statements(tokens)
 ast = parse_ast(statements)
 # print(ast)
 
-main_func = find_function(ast, 'main')
-ret_val = run_function(main_func)
+global_env = make_global_env(ast)
+main_func = find_function(global_env, 'main')
+ret_val = run_function(main_func, global_env)
 print(ret_val)

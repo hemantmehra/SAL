@@ -1,3 +1,7 @@
+(def test)
+    (return (+ 70 9))
+(end test)
+
 (def main)
     (set a 3)
     (label loop)
@@ -5,5 +9,5 @@
         (dec a)
     (jmp_g loop a  0)
     (println 'a')
-    (return 42)
+    (return (test))
 (end main)
