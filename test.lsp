@@ -1,5 +1,5 @@
-(def test)
-    (return (+ 70 9))
+(def test (a b))
+    (return (+ a b))
 (end test)
 
 (def main)
@@ -9,5 +9,5 @@
         (dec a)
     (jmp_g loop a  0)
     (println 'a')
-    (return (test))
+    (return (test 100 201))
 (end main)

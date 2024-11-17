@@ -115,9 +115,10 @@ def parse_ast(statements):
         if statement_start_of_func(statements[i]):
             in_func_flag = True
             func_block = []
-        elif statement_end_of_func(statements[i]):
             func['type'] = AST_Func
+            func['args'] = statements[i][2] if len(statements[i]) == 3 else []
             func['name'] = statements[i][1][1]
+        elif statement_end_of_func(statements[i]):
             func['block'] = deepcopy(func_block)
             ast.append(deepcopy(func))
             func = {}
@@ -132,7 +133,7 @@ def parse_ast(statements):
 
 def apply(f, args, global_env):
     if type(f) == dict:
-        return run_function(f, global_env)
+        return run_function(f, args, global_env)
     elif f[0] == Token_Ident:
         if f[1] == 'print':
             print(args[0][1], end='')
@@ -210,9 +211,16 @@ def find_function(global_env, func_name):
         return global_env[func_name]
     assert False, f'Assert not reached. Function {func_name} was not found.'
 
-def run_function(func, global_env):
-    env = {}
+def bind_args_to_env(func_args, args, env):
+    if len(func_args) == len(args):
+        for i, j in zip(func_args, args):
+            env[i[1]] = j
+        return
+    assert False, f"Assert not reached. func_args and args are of different length, {func_args}, {args}"
 
+def run_function(func, args, global_env):
+    env = {}
+    bind_args_to_env(func['args'], args, env)
     i = 0
     label_map = {}
     block = func['block']
@@ -252,6 +260,7 @@ ast = parse_ast(statements)
 # print(ast)
 
 global_env = make_global_env(ast)
+print(global_env)
 main_func = find_function(global_env, 'main')
-ret_val = run_function(main_func, global_env)
+ret_val = run_function(main_func, [], global_env)
 print(ret_val)
