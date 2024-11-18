@@ -1,5 +1,5 @@
 (def main)
-    (set rows 40)
+    (set rows 256)
     (set columns (+ rows 2))
     (array rule 8)
     (array a1 columns)
@@ -29,7 +29,7 @@
             (set v3 (| v3 v2))
             (set v3 (| v3 v1))
 
-            (print (get a1 i))
+            (print (if (get a1 i) '*' ' '))
             (set a2 i (get rule v3))
 
             (inc i)

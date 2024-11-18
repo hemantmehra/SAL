@@ -160,6 +160,11 @@ def apply(f, args, global_env):
             return (Token_Literal, args[0][1] & args[1][1])
         elif f[1] == '|':
             return (Token_Literal, args[0][1] | args[1][1])
+        elif f[1] == 'if':
+            test = args[0][1]
+            true_val = args[1][1]
+            false_val = args[2][1]
+            return (Token_Literal, true_val if test else false_val)
         else:
             assert False, f"Assert not reached, unknown func: {f}"
     else:
@@ -284,7 +289,7 @@ ast = parse_ast(statements)
 # print(ast)
 
 global_env = make_global_env(ast)
-print(global_env.keys())
+# print(global_env.keys())
 main_func = find_function(global_env, 'main')
 ret_val = run_function(main_func, [], global_env)
-print(ret_val)
+# print(ret_val)
