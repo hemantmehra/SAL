@@ -49,16 +49,21 @@ def tokenize(code: str) -> list:
             tokens.append(token_close())
             i+=1
         elif code[i] == "'":
-            if code[i+2] == "'":
+            if code[i+1] == "'":
+                tokens.append(token_literal(""))
+                i += 2
+            elif code[i+2] == "'":
                 tokens.append(token_literal(code[i+1]))
+                i += 3
             elif code[i+3] == "'":
                 if code[i+2] == '\\' and code[i+3] == 'n':
                     tokens.append(token_literal('\n'))
+                    i += 4
                 else:
                     assert False, f"invalid character. {code[i:i+3]}"
             else:
                 assert False, f"invalid character. {code[i:i+3]}"
-            i += 3
+            
         elif code[i].isspace() and in_word_flag:
             tokens.append(token_parse(word))
             in_word_flag = False
@@ -173,11 +178,16 @@ def eval(l, env, global_env):
             k = l[1][1]
             env[k] = (env[k][0], env[k][1]-1)
             return
+        elif l[0][0] == Token_Ident and l[0][1] == 'inc':
+            k = l[1][1]
+            env[k] = (env[k][0], env[k][1]+1)
+            return
         elif l[0][0] == Token_Ident and l[0][1] == 'array':
-            env[l[1][1]] = [None] * eval(l[2], env)[1]
+            env[l[1][1]] = [(Token_Literal, 0)] * eval(l[2], env, global_env)[1]
             return
         elif l[0][0] == Token_Ident and l[0][1] == 'get':
-            index = l[2][1]
+            index = l[2]
+            index = eval(index, env, global_env)[0]
             key = l[1][1]
             return env[key][index]
         elif l[0][0] == Token_Ident:
@@ -185,7 +195,6 @@ def eval(l, env, global_env):
             if func_name in global_env:
                 func = global_env[func_name]
                 return apply(func, [eval(i, env, global_env) for i in l[1:]], global_env)
-
         return apply(eval(l[0], env, global_env), [eval(i, env, global_env) for i in l[1:]], global_env)
 
     elif type(l) == tuple:
@@ -240,6 +249,14 @@ def run_function(func, args, global_env):
                 i = label_map[key]
             else:
                 i += 1
+        elif statement[0][0] == Token_Ident and statement[0][1] == 'jmp_l':
+            key = statement[1][1]
+            a = eval(statement[2], env, global_env)
+            b = eval(statement[3], env, global_env)
+            if a < b:
+                i = label_map[key]
+            else:
+                i += 1
         elif statement[0][0] == Token_Ident and statement[0][1] == 'return':
             ret = eval(statement[1], env, global_env)
             return ret
@@ -251,7 +268,7 @@ source_code = ''
 with open('test.lsp') as fin:
     source_code = fin.read()
 
-print(source_code)
+# print(source_code)
 tokens = tokenize(source_code)
 statements = parse_statements(tokens)
 # print(statements)
@@ -260,7 +277,7 @@ ast = parse_ast(statements)
 # print(ast)
 
 global_env = make_global_env(ast)
-print(global_env)
+print(global_env.keys())
 main_func = find_function(global_env, 'main')
 ret_val = run_function(main_func, [], global_env)
 print(ret_val)
