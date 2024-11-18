@@ -148,6 +148,8 @@ def apply(f, args, global_env):
             return 0
         elif f[1] == '+':
             return (Token_Literal, args[0][1] + args[1][1])
+        elif f[1] == '-':
+            return (Token_Literal, args[0][1] - args[1][1])
         elif f[1] == '*':
             return (Token_Literal, args[0][1] * args[1][1])
         elif f[1] == '<<':
@@ -168,8 +170,10 @@ def eval(l, env, global_env):
         if l[0][0] == Token_Ident and l[0][1] == 'set':
             k = l[1][1]
             if k in env and type(env[k]) == list:
-                index = l[2][1]
+                index = l[2]
+                index = eval(index, env, global_env)[1]
                 val = l[3]
+                # print(k, index, val)
                 env[k][index] = eval(val, env, global_env)
                 return
             env[k] = eval(l[2], env, global_env)
@@ -187,15 +191,18 @@ def eval(l, env, global_env):
             return
         elif l[0][0] == Token_Ident and l[0][1] == 'get':
             index = l[2]
-            index = eval(index, env, global_env)[0]
+            index = eval(index, env, global_env)[1]
             key = l[1][1]
+            # print('get>>', key, index)
             return env[key][index]
         elif l[0][0] == Token_Ident:
             func_name = l[0][1]
             if func_name in global_env:
                 func = global_env[func_name]
                 return apply(func, [eval(i, env, global_env) for i in l[1:]], global_env)
-        return apply(eval(l[0], env, global_env), [eval(i, env, global_env) for i in l[1:]], global_env)
+
+        res = apply(eval(l[0], env, global_env), [eval(i, env, global_env) for i in l[1:]], global_env)
+        return res
 
     elif type(l) == tuple:
         if l[0] == Token_Literal:
@@ -265,7 +272,7 @@ def run_function(func, args, global_env):
             i+=1
 
 source_code = ''
-with open('test.lsp') as fin:
+with open('rule110.lsp') as fin:
     source_code = fin.read()
 
 # print(source_code)
